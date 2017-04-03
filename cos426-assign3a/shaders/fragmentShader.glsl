@@ -135,7 +135,31 @@ float findIntersectionWithTriangle( Ray ray, vec3 t1, vec3 t2, vec3 t3, out Inte
 float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
     // ----------- Our reference solution uses 23 lines of code.
-    return INFINITY; // currently reports no intersection
+    vec3 lengthToCenter = center - ray.origin;
+    vec3 normalizedDirection = normalize(ray.direction);
+    float tCA = dot(lengthToCenter, normalizedDirection) ;
+    
+    if (tCA < 0.0) {
+
+        //gl_FragColor = vec4(0.0,1.0,1.0,1.0);
+        return INFINITY;
+    }
+    float rSquared = radius * radius;
+    float dSquared = dot(lengthToCenter,lengthToCenter) - (tCA * tCA);
+    if ( dSquared > rSquared) {
+        
+       // gl_FragColor = vec4(1.0,1.0,1.0,1.0);
+        return INFINITY;
+    }
+
+    float tHC = sqrt(rSquared - dSquared);
+    float t = tCA - tHC;
+    intersect.position = ray.origin + (t * normalizedDirection);
+    intersect.normal = normalize(intersect.position - ray.origin);
+
+    return length(t * normalizedDirection);
+
+    //return INFINITY;
     // ----------- STUDENT CODE END ------------
 }
 
