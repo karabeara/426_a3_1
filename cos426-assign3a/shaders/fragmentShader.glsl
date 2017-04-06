@@ -126,8 +126,70 @@ float findIntersectionWithPlane( Ray ray, vec3 norm, float dist, out Intersectio
 // Triangle
 float findIntersectionWithTriangle( Ray ray, vec3 t1, vec3 t2, vec3 t3, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
+
+    // FACE 1: make face with ray origin, t1, and t2
+    vec3 face1_v1 = t1 - ray.origin;
+    vec3 face1_v2 = t2 - ray.origin;
+    vec3 n1 = cross(face1_v2, face1_v1);
+    vec3 normalized_n1 = normalize(n1);
+
+    float face1_dist = dot(normalized_n1, t1);
+    face1_dist = -face1_dist;
+
+    float distToFace1 = findIntersectionWithPlane(ray, normalized_n1, face1_dist, intersect);
+    if (distToFace1 < 0.0) { return INFINITY; }
+
+    // FACE 2: make face with ray origin, t1, and t3
+    vec3 face2_v1 = t1 - ray.origin;
+    vec3 face2_v2 = t3 - ray.origin;
+    vec3 n2 = cross(face2_v2, face2_v1);
+    vec3 normalized_n2 = normalize(n2);
+
+    float face2_dist = dot(normalized_n2, t1);
+    face2_dist = -face1_dist;
+
+    float distToFace2 = findIntersectionWithPlane(ray, normalized_n2, face2_dist, intersect);
+    if (distToFace2 < 0.0) { return INFINITY; }
+
+    // FACE 3: make face with ray origin, t2, and t3
+    vec3 face3_v1 = t2 - ray.origin;
+    vec3 face3_v2 = t3 - ray.origin;
+    vec3 n3 = cross(face3_v2, face3_v1);
+    vec3 normalized_n3 = normalize(n3);
+
+    float face3_dist = dot(normalized_n3, t2);
+    face3_dist = -face3_dist;
+
+    float distToFace3 = findIntersectionWithPlane(ray, normalized_n3, face3_dist, intersect);
+    if (distToFace3 < 0.0) { return INFINITY; }
+
+    // Find P - intersection of ray with point on triangle's plane
+    // find normal of given triangle face
+    vec3 triangleVec1 = t1 - t3;
+    vec3 triangleVec2 = t2 - t3;
+    vec3 triangleNormal = cross(triangleVec1, triangleVec2);
+    vec3 normalized_triangleNormal = normalize(triangleNormal);
+
+    float dist = dot(normalized_triangleNormal, t1);
+    dist = -dist;
+
+    float distToPlane = findIntersectionWithPlane(ray, normalized_triangleNormal, dist, intersect);
+
+    //
+    // vec3 triangleIntersection = intersect.position;
+    //
+    // vec3 v1 = t1 - triangleIntersection;
+    // vec3 v2 = t2 - triangleIntersection;
+    // vec3 n1 = cross(v2, v1);
+    // vec3 normalized_n1 = normalize(n1);
+    //
+    // if ( dot(ray.direction, normalized_n1) < 0.0 ) { return INFINITY; }
+
+    // return 10.0;
+    return length(ray.origin - intersect.position);
+
     // ----------- Our reference solution uses 22 lines of code.
-    return INFINITY; // currently reports no intersection
+    // return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
 }
 
@@ -138,7 +200,7 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
     vec3 lengthToCenter = center - ray.origin;
     vec3 normalizedDirection = normalize(ray.direction);
     float tCA = dot(lengthToCenter, normalizedDirection) ;
-    
+
     if (tCA < 0.0) {
 
         //gl_FragColor = vec4(0.0,1.0,1.0,1.0);
@@ -146,8 +208,8 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
     }
     float rSquared = radius * radius;
     float dSquared = dot(lengthToCenter,lengthToCenter) - (tCA * tCA);
-    if ( dSquared > rSquared) {
-        
+    if ( dSquared > rSquared ) {
+
        // gl_FragColor = vec4(1.0,1.0,1.0,1.0);
         return INFINITY;
     }
@@ -269,6 +331,7 @@ vec3 calculateDiffuseColor( Material mat, vec3 posIntersection, vec3 normalVecto
 // lightVec is the vector from that position to that light
 bool pointInShadow( vec3 pos, vec3 lightVec ) {
     // ----------- STUDENT CODE BEGIN ------------
+
     // ----------- Our reference solution uses 10 lines of code.
     return false;
     // ----------- STUDENT CODE END ------------
