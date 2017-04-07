@@ -101,6 +101,26 @@ bool chooseCloserIntersection( float dist, inout float best_dist, inout Intersec
 
 // put any general convenience functions you want up here
 // ----------- STUDENT CODE BEGIN ------------
+float areaOfTriangle(vec3 v1, vec3 v2, vec3 v3, vec3 norm) {
+  vec3 cross1 = cross(v2 - v1, v3 - v1);
+  float area1 = 0.5 * dot(cross1, norm);
+  return area1;
+}
+
+// Code copied directly from http://www.neilmendoza.com/glsl-rotation-about-an-arbitrary-axis/ as told to do so by Riley
+mat4 rotationMatrix(vec3 axis, float angle)
+{
+    axis = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+
+    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                0.0,                                0.0,                                0.0,                                1.0);
+}
+
 // ----------- Our reference solution uses 135 lines of code.
 // ----------- STUDENT CODE END ------------
 
@@ -123,47 +143,31 @@ float findIntersectionWithPlane( Ray ray, vec3 norm, float dist, out Intersectio
     return len;
 }
 
-float areaOfTriangle(vec3 v1, vec3 v2, vec3 v3, vec3 norm) {
-  vec3 cross1 = cross(v2 - v1, v3 - v1);
-  float area1 = 0.5 * dot(cross1, norm);
-  return area1;
-}
-
 // Triangle
 float findIntersectionWithTriangle( Ray ray, vec3 t1, vec3 t2, vec3 t3, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
-
     // Find P - intersection of ray with point on triangle's plane
-    // find normal of given triangle face
+    // Find normal of given triangle face
     vec3 triangleVec1 = t2 - t1;
     vec3 triangleVec2 = t3 - t1;
     vec3 triangleNormal = cross(triangleVec1, triangleVec2);
     vec3 normalized_triangleNormal = normalize(triangleNormal);
 
     float dist = dot(normalized_triangleNormal, t1);
-    //dist = abs(dist);
-
     float distToPlane = findIntersectionWithPlane(ray, normalized_triangleNormal, dist, intersect);
-
     vec3 P = intersect.position;
 
     // Area of triangle
     float totalTriArea = areaOfTriangle(t1, t2, t3, normalized_triangleNormal);
 
-    // Area of subtriangle 1
+    // Area of subtriangles 1,2
     float area1 = areaOfTriangle(t1, t2, P, normalized_triangleNormal) / totalTriArea;
-
-    // Area of subtriangle 2
     float area2 = areaOfTriangle(t1, P, t3, normalized_triangleNormal) / totalTriArea;
-
-    //float areaSum = abs(a) + abs(b) + abs(c);
 
     if (area1 >= 0.0 && area1 <= 1.0 && area2 >= 0.0 && area2 <= 1.0 && area1 + area2 >= 0.0 && area1 + area2 <= 1.0) { return distToPlane; }
 
     return INFINITY;
-
     // ----------- Our reference solution uses 22 lines of code.
-    // return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
 }
 
@@ -206,6 +210,9 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
 // Cylinder
 float getIntersectOpenCylinder( Ray ray, vec3 center, vec3 axis, float len, float rad, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
+
+
+
     // ----------- Our reference solution uses 31 lines of code.
     return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
@@ -213,6 +220,16 @@ float getIntersectOpenCylinder( Ray ray, vec3 center, vec3 axis, float len, floa
 
 float getIntersectDisc( Ray ray, vec3 center, vec3 norm, float rad, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
+
+    // Find P - intersection of ray with point on triangle's plane
+    // Find normal of given triangle face
+    vec3 normalized_norm = normalize(norm);
+
+    float dist = dot(normalized_norm, center);
+    float distToPlane = findIntersectionWithPlane(ray, normalized_norm, dist, intersect);
+    float relativeDistance = distance(intersect.position, center);
+
+    if (relativeDistance < rad) { return distToPlane; }
     // ----------- Our reference solution uses 15 lines of code.
     return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
@@ -271,20 +288,6 @@ float findIntersectionWithCone( Ray ray, vec3 center, vec3 apex, float radius, o
 }
 
 #define MAX_RECURSION 8
-
-// Code copied directly from http://www.neilmendoza.com/glsl-rotation-about-an-arbitrary-axis/ as told to do so by Riley
-mat4 rotationMatrix(vec3 axis, float angle)
-{
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-
-    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-                0.0,                                0.0,                                0.0,                                1.0);
-}
 
 vec3 calculateSpecialDiffuseColor( Material mat, vec3 posIntersection, vec3 normalVector ) {
     // ----------- STUDENT CODE BEGIN ------------
@@ -407,6 +410,7 @@ vec3 calcReflectionVector( Material material, vec3 direction, vec3 normalVector,
     }
     // the material is not mirror, so it's glass.
     // compute the refraction direction...
+
 
     // ----------- STUDENT CODE BEGIN ------------
     // see lecture 13 slide ( lighting ) on Snell's law
