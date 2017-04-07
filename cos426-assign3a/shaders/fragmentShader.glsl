@@ -272,12 +272,41 @@ float findIntersectionWithCone( Ray ray, vec3 center, vec3 apex, float radius, o
 
 #define MAX_RECURSION 8
 
+// Code copied directly from http://www.neilmendoza.com/glsl-rotation-about-an-arbitrary-axis/ as told to do so by Riley
+mat4 rotationMatrix(vec3 axis, float angle)
+{
+    axis = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+
+    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                0.0,                                0.0,                                0.0,                                1.0);
+}
+
 vec3 calculateSpecialDiffuseColor( Material mat, vec3 posIntersection, vec3 normalVector ) {
     // ----------- STUDENT CODE BEGIN ------------
     if ( mat.special == CHECKERBOARD ) {
         // do something here for checkerboard
-        
+        vec3 zAxis = vec3(0.0, 0.0, 1.0);
+        vec3 normalizedAxis = cross(normalVector, zAxis);
+        float angle = acos( dot(normalizedAxis, normalVector) );
+        mat4 rotationMatrix = rotationMatrix(normalizedAxis, angle);
 
+        vec4 oldCoordinates = vec4(posIntersection, 0.0);
+        vec4 newCoordinates = oldCoordinates * rotationMatrix;
+        float x = floor(newCoordinates.x);
+        float y = floor(newCoordinates.y);
+        float total = x + y;
+        bool isEven = mod(total, 2.0) < EPS;
+
+        vec3 blackColor = 0.5 * mat.color;
+        vec3 whiteColor = 1.0 * mat.color;
+
+        if (isEven) { return blackColor; }
+        else        { return whiteColor; }
         // ----------- Our reference solution uses 21 lines of code.
     }
     else if ( mat.special == MYSPECIAL ) {
