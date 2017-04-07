@@ -206,9 +206,26 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
     // ----------- STUDENT CODE BEGIN ------------
     // pmin and pmax represent two bounding points of the box
     // pmin stores [xmin, ymin, zmin] and pmax stores [xmax, ymax, zmax]
+    int faceCount;
+    int vectorCount;
+    int i;
+    int j;
+    vec3 multidim[6][4]
+
+    for (faceCount = 0; faceCount < 6; faceCount++) {
+
+        for (vectorCount = 0; vectorCount < 4; vectorCount++) {
+
+            for 
 
 
-    function()
+
+
+
+
+
+        }
+    }
     /* function that takes 3 points and then computes normal and then checks 
     intersection and then checks if point is on plane. */
 
