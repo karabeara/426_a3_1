@@ -225,11 +225,32 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
     // ----------- STUDENT CODE END ------------
 }
 
+// returns an array of four vec3's which are the faces 
+
+// takes array of faces and then calculates normal and distance,
+// get these two to get intersections
+
+// check if points are on box 
+// compare nomals
+
+
 // Box
 float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection out_intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
     // pmin and pmax represent two bounding points of the box
     // pmin stores [xmin, ymin, zmin] and pmax stores [xmax, ymax, zmax]
+
+
+    function()
+    /* function that takes 3 points and then computes normal and then checks 
+    intersection and then checks if point is on plane. 
+
+
+
+    // get all of the faces, calculate normals , and then return the smallest one. 
+
+
+
     // ----------- Our reference solution uses 24 lines of code.
     return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
