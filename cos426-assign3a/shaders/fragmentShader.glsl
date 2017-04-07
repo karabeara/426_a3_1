@@ -157,7 +157,6 @@ float findIntersectionWithTriangle( Ray ray, vec3 t1, vec3 t2, vec3 t3, out Inte
     float area2 = areaOfTriangle(t1, P, t3, normalized_triangleNormal) / totalTriArea;
 
     //float areaSum = abs(a) + abs(b) + abs(c);
-
     if (area1 >= 0.0 && area1 <= 1.0 && area2 >= 0.0 && area2 <= 1.0 && area1 + area2 >= 0.0 && area1 + area2 <= 1.0) { return distToPlane; }
 
     return INFINITY;
@@ -211,7 +210,7 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
 
     function()
     /* function that takes 3 points and then computes normal and then checks 
-    intersection and then checks if point is on plane. 
+    intersection and then checks if point is on plane. */
 
 
 
