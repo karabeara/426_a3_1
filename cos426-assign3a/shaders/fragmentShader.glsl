@@ -123,47 +123,42 @@ float findIntersectionWithPlane( Ray ray, vec3 norm, float dist, out Intersectio
     return len;
 }
 
+float areaOfTriangle(vec3 v1, vec3 v2, vec3 v3, vec3 norm) {
+  vec3 cross1 = cross(v2 - v1, v3 - v1);
+  float area1 = 0.5 * dot(cross1, norm);
+  return area1;
+}
+
 // Triangle
 float findIntersectionWithTriangle( Ray ray, vec3 t1, vec3 t2, vec3 t3, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
 
-    // // Find P - intersection of ray with point on triangle's plane
-    // // find normal of given triangle face
-    // vec3 triangleVec1 = t2 - t1;
-    // vec3 triangleVec2 = t3 - t1;
-    // vec3 triangleNormal = cross(triangleVec1, triangleVec2);
-    // vec3 normalized_triangleNormal = normalize(triangleNormal);
-    //
-    // float dist = dot(normalized_triangleNormal, t1);
-    // dist = -abs(dist);
-    //
-    // float distToPlane = findIntersectionWithPlane(ray, normalized_triangleNormal, dist, intersect);
-    //
-    // vec3 P = intersect.position;
-    //
-    // // Area of triangle
-    // vec3 cross1 = cross(t2 - t1, t3 - t1);
-    // float totalTriArea = 0.5 * dot(cross1, normalized_triangleNormal);
-    //
-    // // Area of subtriangle 1
-    // vec3 cross2 = cross(t2 - t1, P - t1);
-    // float area2 = 0.5 * dot(cross2, normalized_triangleNormal);
-    //
-    // // Area of subtriangle 2
-    // vec3 cross3 = cross(P - t1, t3 - t1);
-    // float area3 = 0.5 * dot(cross3, normalized_triangleNormal);
-    //
-    // // Area of subtriangle 3
-    // vec3 cross4 = cross(t2 - P, t3 - P);
-    // float area4 = 0.5 * dot(cross4, normalized_triangleNormal);
-    //
-    // float a = area2 / totalTriArea;
-    // float b = area3 / totalTriArea;
-    // float c = area4 / totalTriArea;
-    //
-    // float areaSum = a + b + c;
-    // //float isIntersection =
-    // if (areaSum < 1.0 + EPS && areaSum > 1.0 - EPS) { return length(ray.origin - intersect.position); }
+    // Find P - intersection of ray with point on triangle's plane
+    // find normal of given triangle face
+    vec3 triangleVec1 = t2 - t1;
+    vec3 triangleVec2 = t3 - t1;
+    vec3 triangleNormal = cross(triangleVec1, triangleVec2);
+    vec3 normalized_triangleNormal = normalize(triangleNormal);
+
+    float dist = dot(normalized_triangleNormal, t1);
+    //dist = abs(dist);
+
+    float distToPlane = findIntersectionWithPlane(ray, normalized_triangleNormal, dist, intersect);
+
+    vec3 P = intersect.position;
+
+    // Area of triangle
+    float totalTriArea = areaOfTriangle(t1, t2, t3, normalized_triangleNormal);
+
+    // Area of subtriangle 1
+    float area1 = areaOfTriangle(t1, t2, P, normalized_triangleNormal) / totalTriArea;
+
+    // Area of subtriangle 2
+    float area2 = areaOfTriangle(t1, P, t3, normalized_triangleNormal) / totalTriArea;
+
+    //float areaSum = abs(a) + abs(b) + abs(c);
+
+    if (area1 >= 0.0 && area1 <= 1.0 && area2 >= 0.0 && area2 <= 1.0 && area1 + area2 >= 0.0 && area1 + area2 <= 1.0) { return distToPlane; }
 
     return INFINITY;
 
@@ -281,7 +276,7 @@ vec3 calculateSpecialDiffuseColor( Material mat, vec3 posIntersection, vec3 norm
     // ----------- STUDENT CODE BEGIN ------------
     if ( mat.special == CHECKERBOARD ) {
         // do something here for checkerboard
-
+        
 
         // ----------- Our reference solution uses 21 lines of code.
     }
