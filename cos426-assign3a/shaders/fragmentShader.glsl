@@ -206,43 +206,126 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
 // check if points are on box 
 // compare nomals
 
+bool isIntersectionInBox(vec3 intersectPosition, float x0, float x1, float y0 , float y1, float z0, float z1) {
 
+    if (true) {
+        return true;
+    }
+    if (x0 - EPS <= intersectPosition.x  && intersectPosition.x <= x1 + EPS) {
+        if (y0 - EPS <= intersectPosition.y  && intersectPosition.y <= y1 + EPS) {
+            if (z0 - EPS <= intersectPosition.z  && intersectPosition.z <= z1 +EPS) {
+                return true; 
+            }
+        }
+    }
+    else {
+        return false;
+    }
+    
+
+}
 // Box
 float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection out_intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
     // pmin and pmax represent two bounding points of the box
     // pmin stores [xmin, ymin, zmin] and pmax stores [xmax, ymax, zmax]
-    int faceCount;
-    int vectorCount;
-    int i;
-    int j;
-    vec3 multidim[6][4]
-
-    for (faceCount = 0; faceCount < 6; faceCount++) {
-
-        for (vectorCount = 0; vectorCount < 4; vectorCount++) {
-
-            for 
 
 
+    //normls of box 
+    vec3 xNorm;
+    vec3 yNorm;
+    vec3 zNorm;
+
+    Intersection bestIntersect; 
+    Intersection challengeIntersect;
+
+    vec3 boxCorners[2];
+    boxCorners[0] = pmin;
+    boxCorners[1] = pmax;
+
+    // calculating box normals
+    vec3 bigX;
+    bigX.xyz = pmin.xyz;
+    bigX.x = pmax.x;
+    xNorm =  bigX - pmin;
+    xNorm = normalize(xNorm);
+
+    vec3 bigY;
+    bigY.xyz = pmin.xyz;
+    bigY.y = pmax.y;
+    yNorm = bigY - pmin;
+    yNorm = normalize(yNorm);
+
+    vec3 bigZ;
+    bigZ.xyz = pmin.xyz;
+    bigZ.z = pmax.z;
+    zNorm = bigZ - pmin;
+    zNorm = normalize(zNorm);
+
+    //normalize normals
 
 
+    vec3 boxNormals[3];
+    boxNormals[0] = xNorm;
+    boxNormals[1] = yNorm;
+    boxNormals[2] = zNorm; 
+
+    // initialzing best distance 
+    float bestDist = dot(boxNormals[1], pmin);
 
 
+    float bestIntersectionLength = findIntersectionWithPlane(ray, boxNormals[1], bestDist, bestIntersect);
+    
+    if (isIntersectionInBox(bestIntersect.position, pmin.x, pmax.x, pmin.y, pmax.y, pmin.z, pmax.z)) {
+        // do nothing
+    }
+    else {
+        bestIntersectionLength = INFINITY;
+    }
 
+   if (true) {
+        out_intersect = bestIntersect;
+        return bestIntersectionLength;
+    }
+    
+    // interates through the plances and chooses the plane with the closest intersection
+    for (int i = 0; i < 3; i++) {
+        // calculate distance from plane to orgin in order to get the intersection
+        float challengeDist = (dot(boxNormals[i], pmin));
+        // gets the updates the challenger intersect and records its length
+        float challengeIntersectLength = findIntersectionWithPlane(ray, boxNormals[i], challengeDist, challengeIntersect);
+        // keeps the current closest intersection 
+
+        if (isIntersectionInBox(challengeIntersect.position, pmin.x, pmax.x, pmin.y, pmax.y, pmin.z, pmax.z)) {
+        chooseCloserIntersection(challengeIntersectLength, bestIntersectionLength, challengeIntersect, bestIntersect);
+        }
+        else {
+            // do nothing
         }
     }
+
+    for (int i = 0; i < 3; i++) {
+        // calculate distance from plane to orgin in order to get the intersection
+        float challengeDist = dot(boxNormals[i], pmax);
+        // gets the updates the challenger intersect and records its length
+        float challengeIntersectLength = findIntersectionWithPlane(ray, boxNormals[i], challengeDist, challengeIntersect);
+        // keeps the current closest intersection 
+        if (isIntersectionInBox(challengeIntersect.position, pmin.x, pmax.x, pmin.y, pmax.y, pmin.z, pmax.z)) {
+        chooseCloserIntersection(challengeIntersectLength, bestIntersectionLength, challengeIntersect, bestIntersect);
+        }
+        else {
+            // do nothing
+        }    
+    }
+
+
+    out_intersect = bestIntersect;
+
     /* function that takes 3 points and then computes normal and then checks 
     intersection and then checks if point is on plane. */
 
-
-
     // get all of the faces, calculate normals , and then return the smallest one. 
-
-
-
-    // ----------- Our reference solution uses 24 lines of code.
-    return INFINITY; // currently reports no intersection
+    return bestIntersectionLength; 
     // ----------- STUDENT CODE END ------------
 }
 
