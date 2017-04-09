@@ -164,7 +164,6 @@ float findIntersectionWithTriangle( Ray ray, vec3 t1, vec3 t2, vec3 t3, out Inte
     float area1 = areaOfTriangle(t1, t2, P, normalized_triangleNormal) / totalTriArea;
     float area2 = areaOfTriangle(t1, P, t3, normalized_triangleNormal) / totalTriArea;
 
-
     if (area1 >= 0.0 && area1 <= 1.0 && area2 >= 0.0 && area2 <= 1.0 && area1 + area2 >= 0.0 && area1 + area2 <= 1.0) { return distToPlane; }
 
     return INFINITY;
@@ -197,49 +196,11 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
     // ----------- STUDENT CODE END ------------
 }
 
-// returns an array of four vec3's which are the faces 
-
-// takes array of faces and then calculates normal and distance,
-// get these two to get intersections
-
-// check if points are on box 
-// compare nomals
-
-
 // Box
 float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection out_intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
     // pmin and pmax represent two bounding points of the box
     // pmin stores [xmin, ymin, zmin] and pmax stores [xmax, ymax, zmax]
-    int faceCount;
-    int vectorCount;
-    int i;
-    int j;
-    vec3 multidim[6][4]
-
-    for (faceCount = 0; faceCount < 6; faceCount++) {
-
-        for (vectorCount = 0; vectorCount < 4; vectorCount++) {
-
-            for 
-
-
-
-
-
-
-
-        }
-    }
-    /* function that takes 3 points and then computes normal and then checks 
-    intersection and then checks if point is on plane. */
-
-
-
-    // get all of the faces, calculate normals , and then return the smallest one. 
-
-
-
     // ----------- Our reference solution uses 24 lines of code.
     return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
@@ -446,7 +407,17 @@ vec3 getLightContribution( Light light, Material mat, vec3 posIntersection, vec3
 
         if ( mat.materialType == PHONGMATERIAL ) {
             // ----------- STUDENT CODE BEGIN ------------
-            vec3 phongTerm = vec3( 0.0, 0.0, 0.0 ); // not implemented yet, so just add black
+
+            // Specular reflection --> angle alpha --> angle for reflected ray to eyeVector ray
+            vec3 reflectionVector = reflect( lightVector, normalVector );
+            vec3 normalized_reflectionVector  = normalize( reflectionVector );
+            vec3 normalized_eyeVector         = normalize( eyeVector );
+            float cos_alpha = dot( normalized_eyeVector, normalized_reflectionVector );
+
+            float specularIntensity = pow( cos_alpha, mat.shininess ) * light.intensity;
+            vec3 phongTerm = 50.0 * specularIntensity * light.color / attenuation;
+
+            //vec3 phongTerm = vec3( 0.0, 0.0, 0.0 ); // not implemented yet, so just add black
             // ----------- Our reference solution uses 10 lines of code.
             // ----------- STUDENT CODE END ------------
             contribution += phongTerm;
@@ -488,8 +459,6 @@ vec3 calcReflectionVector( Material material, vec3 direction, vec3 normalVector,
     // the eta below is eta_i/eta_r
     float eta = ( isInsideObj ) ? 1.0 / material.refractionRatio : material.refractionRatio;
     // ----------- Our reference solution uses 11 lines of code.
-    // float cos_incident = - dot(normalVector, direction);
-    // direction = direction + 2.0 * cos_incident * normalVector;
     return refract( direction, normalVector, eta );
     //return reflect( direction, normalVector ); // return mirror direction so you can see something
     // ----------- STUDENT CODE END ------------
