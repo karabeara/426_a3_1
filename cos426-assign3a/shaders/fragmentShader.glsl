@@ -164,11 +164,9 @@ float findIntersectionWithTriangle( Ray ray, vec3 t1, vec3 t2, vec3 t3, out Inte
     float area1 = areaOfTriangle(t1, t2, P, normalized_triangleNormal) / totalTriArea;
     float area2 = areaOfTriangle(t1, P, t3, normalized_triangleNormal) / totalTriArea;
 
-
     if (area1 >= 0.0 && area1 <= 1.0 && area2 >= 0.0 && area2 <= 1.0 && area1 + area2 >= 0.0 && area1 + area2 <= 1.0) { return distToPlane; }
 
     return INFINITY;
-    // ----------- Our reference solution uses 22 lines of code.
     // ----------- STUDENT CODE END ------------
 }
 
@@ -180,7 +178,7 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
     vec3 normalizedDirection = normalize(ray.direction);
     float tCA = dot(lengthToCenter, normalizedDirection) ;
 
-    if (tCA < 0.0) { return INFINITY; }
+    if (tCA < -EPS) { return INFINITY; }
     float rSquared = radius * radius;
     float dSquared = dot(lengthToCenter,lengthToCenter) - (tCA * tCA);
     if ( dSquared > rSquared ) { return INFINITY; }
@@ -189,8 +187,8 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
     float t1 = tCA - tHC;
     float t2 = tCA + tHC;
     float t;
-    if (t1 < t2 && t1 > 0.0) { t = t1; }
-    else                     { t = t2; }
+    if (t1 > EPS) { t = t1; }
+    else          { t = t2; }
     intersect.position = ray.origin + (t * normalizedDirection);
     intersect.normal = normalize(intersect.position - center);
 
@@ -208,9 +206,7 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
 
 bool isIntersectionInBox(vec3 intersectPosition, float x0, float x1, float y0 , float y1, float z0, float z1) {
 
-    if (true) {
-        return true;
-    }
+
     if (x0 - EPS <= intersectPosition.x  && intersectPosition.x <= x1 + EPS) {
         if (y0 - EPS <= intersectPosition.y  && intersectPosition.y <= y1 + EPS) {
             if (z0 - EPS <= intersectPosition.z  && intersectPosition.z <= z1 +EPS) {
@@ -224,6 +220,7 @@ bool isIntersectionInBox(vec3 intersectPosition, float x0, float x1, float y0 , 
     
 
 }
+
 // Box
 float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection out_intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
@@ -283,12 +280,9 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
         bestIntersectionLength = INFINITY;
     }
 
-   if (true) {
-        out_intersect = bestIntersect;
-        return bestIntersectionLength;
-    }
+   
     
-    // interates through the plances and chooses the plane with the closest intersection
+    // interates through the planes and chooses the plane with the closest intersection
     for (int i = 0; i < 3; i++) {
         // calculate distance from plane to orgin in order to get the intersection
         float challengeDist = (dot(boxNormals[i], pmin));
@@ -332,9 +326,43 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
 // Cylinder
 float getIntersectOpenCylinder( Ray ray, vec3 center, vec3 axis, float len, float rad, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
-
-
-
+    // vec3 normalized_axis = normalize(axis);
+    //
+    // vec3 relativePosition = ray.origin - center;     // delta P  = (p - pa)
+    // float p_dot_va = dot( relativePosition, normalized_axis );
+    // float v_dot_va = dot( ray.direction, normalized_axis );
+    //
+    // vec3 vec_a = ray.direction - v_dot_va * normalized_axis;
+    // vec3 vec_c = relativePosition - p_dot_va * normalized_axis;
+    //
+    // float a = dot( vec_a, vec_a );
+    // float b = 2.0 * dot( vec_a, vec_c );
+    // float c = dot( vec_c, vec_c ) - ( rad * rad );
+    //
+    // // a(t^2) + b(t) + c = 0 <-- Use quadratic equation
+    // float t;
+    // float t1 = ( -b + sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
+    // float t2 = ( -b - sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
+    //
+    // if      ( t1 < 0.0 && t2 < 0.0 ) { return INFINITY; }
+    // else if ( t1 >= 0.0 && t1 < t2 ) { t = t1; }
+    // else                             { t = t2; }
+    //
+    // intersect.position = ray.origin + ray.direction * t;
+    //
+    // Ray normalRay;
+    // normalRay.origin = center;
+    // normalRay.direction = normalized_axis;
+    // float projectionLength = dot( center - intersect.position, normalized_axis );
+    //
+    // intersect.normal = normalize( rayGetOffset( normalRay, projectionLength ) - intersect.position );
+    //
+    // vec3 dist = intersect.position - ray.origin;
+    // float relativeDistance = length(dist);
+    //
+    // float capLimit = dot( normalized_axis, (ray.origin + ray.direction * t) - center );
+    // vec3 roundLimit = (ray.origin + ray.direction * t) - center - capLimit * normalized_axis;
+    // if ( dot(roundLimit, roundLimit) - (rad * rad) == 0.0 && capLimit < 0.0 ) {  return relativeDistance; }
     // ----------- Our reference solution uses 31 lines of code.
     return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
@@ -496,7 +524,17 @@ vec3 getLightContribution( Light light, Material mat, vec3 posIntersection, vec3
 
         if ( mat.materialType == PHONGMATERIAL ) {
             // ----------- STUDENT CODE BEGIN ------------
-            vec3 phongTerm = vec3( 0.0, 0.0, 0.0 ); // not implemented yet, so just add black
+
+            // Specular reflection --> angle alpha --> angle for reflected ray to eyeVector ray
+            vec3 reflectionVector = reflect( lightVector, normalVector );
+            vec3 normalized_reflectionVector  = normalize( reflectionVector );
+            vec3 normalized_eyeVector         = normalize( eyeVector );
+            float cos_alpha = dot( normalized_eyeVector, normalized_reflectionVector );
+
+            float specularIntensity = pow( cos_alpha, mat.shininess ) * light.intensity;
+            vec3 phongTerm = 50.0 * specularIntensity * light.color / attenuation;
+
+            //vec3 phongTerm = vec3( 0.0, 0.0, 0.0 ); // not implemented yet, so just add black
             // ----------- Our reference solution uses 10 lines of code.
             // ----------- STUDENT CODE END ------------
             contribution += phongTerm;
@@ -533,14 +571,13 @@ vec3 calcReflectionVector( Material material, vec3 direction, vec3 normalVector,
     // the material is not mirror, so it's glass.
     // compute the refraction direction...
 
-
     // ----------- STUDENT CODE BEGIN ------------
     // see lecture 13 slide ( lighting ) on Snell's law
     // the eta below is eta_i/eta_r
-    float eta = ( isInsideObj ) ? 1.0/material.refractionRatio : material.refractionRatio;
+    float eta = ( isInsideObj ) ? 1.0 / material.refractionRatio : material.refractionRatio;
     // ----------- Our reference solution uses 11 lines of code.
-
-    return reflect( direction, normalVector ); // return mirror direction so you can see something
+    return refract( direction, normalVector, eta );
+    //return reflect( direction, normalVector ); // return mirror direction so you can see something
     // ----------- STUDENT CODE END ------------
 }
 
