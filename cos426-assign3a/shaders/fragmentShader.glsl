@@ -196,12 +196,12 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
     // ----------- STUDENT CODE END ------------
 }
 
-// returns an array of four vec3's which are the faces 
+// returns an array of four vec3's which are the faces
 
 // takes array of faces and then calculates normal and distance,
 // get these two to get intersections
 
-// check if points are on box 
+// check if points are on box
 // compare nomals
 
 bool isIntersectionInBox(vec3 intersectPosition, float x0, float x1, float y0 , float y1, float z0, float z1) {
@@ -209,16 +209,14 @@ bool isIntersectionInBox(vec3 intersectPosition, float x0, float x1, float y0 , 
 
     if (x0 - EPS <= intersectPosition.x  && intersectPosition.x <= x1 + EPS) {
         if (y0 - EPS <= intersectPosition.y  && intersectPosition.y <= y1 + EPS) {
-            if (z0 - EPS <= intersectPosition.z  && intersectPosition.z <= z1 +EPS) {
-                return true; 
+            if (z0 - EPS <= intersectPosition.z  && intersectPosition.z <= z1 + EPS) {
+                return true;
             }
         }
     }
     else {
         return false;
     }
-    
-
 }
 
 // Box
@@ -228,12 +226,12 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
     // pmin stores [xmin, ymin, zmin] and pmax stores [xmax, ymax, zmax]
 
 
-    //normls of box 
+    //normls of box
     vec3 xNorm;
     vec3 yNorm;
     vec3 zNorm;
 
-    Intersection bestIntersect; 
+    Intersection bestIntersect;
     Intersection challengeIntersect;
 
     vec3 boxCorners[2];
@@ -265,14 +263,14 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
     vec3 boxNormals[3];
     boxNormals[0] = xNorm;
     boxNormals[1] = yNorm;
-    boxNormals[2] = zNorm; 
+    boxNormals[2] = zNorm;
 
-    // initialzing best distance 
+    // initialzing best distance
     float bestDist = dot(boxNormals[1], pmin);
 
 
     float bestIntersectionLength = findIntersectionWithPlane(ray, boxNormals[1], bestDist, bestIntersect);
-    
+
     if (isIntersectionInBox(bestIntersect.position, pmin.x, pmax.x, pmin.y, pmax.y, pmin.z, pmax.z)) {
         // do nothing
     }
@@ -280,15 +278,15 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
         bestIntersectionLength = INFINITY;
     }
 
-   
-    
+
+
     // interates through the planes and chooses the plane with the closest intersection
     for (int i = 0; i < 3; i++) {
         // calculate distance from plane to orgin in order to get the intersection
         float challengeDist = (dot(boxNormals[i], pmin));
         // gets the updates the challenger intersect and records its length
         float challengeIntersectLength = findIntersectionWithPlane(ray, boxNormals[i], challengeDist, challengeIntersect);
-        // keeps the current closest intersection 
+        // keeps the current closest intersection
 
         if (isIntersectionInBox(challengeIntersect.position, pmin.x, pmax.x, pmin.y, pmax.y, pmin.z, pmax.z)) {
         chooseCloserIntersection(challengeIntersectLength, bestIntersectionLength, challengeIntersect, bestIntersect);
@@ -303,23 +301,23 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
         float challengeDist = dot(boxNormals[i], pmax);
         // gets the updates the challenger intersect and records its length
         float challengeIntersectLength = findIntersectionWithPlane(ray, boxNormals[i], challengeDist, challengeIntersect);
-        // keeps the current closest intersection 
+        // keeps the current closest intersection
         if (isIntersectionInBox(challengeIntersect.position, pmin.x, pmax.x, pmin.y, pmax.y, pmin.z, pmax.z)) {
         chooseCloserIntersection(challengeIntersectLength, bestIntersectionLength, challengeIntersect, bestIntersect);
         }
         else {
             // do nothing
-        }    
+        }
     }
 
 
     out_intersect = bestIntersect;
 
-    /* function that takes 3 points and then computes normal and then checks 
+    /* function that takes 3 points and then computes normal and then checks
     intersection and then checks if point is on plane. */
 
-    // get all of the faces, calculate normals , and then return the smallest one. 
-    return bestIntersectionLength; 
+    // get all of the faces, calculate normals , and then return the smallest one.
+    return bestIntersectionLength;
     // ----------- STUDENT CODE END ------------
 }
 
@@ -464,6 +462,9 @@ vec3 calculateSpecialDiffuseColor( Material mat, vec3 posIntersection, vec3 norm
     }
     else if ( mat.special == MYSPECIAL ) {
         // do something here for myspecial
+        // Line taken from http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl as wass approced by the specs
+        return fract(sin(dot(posIntersection, vec3(12.9898,78.233, 100.0))) * 43758.5453) * mat.color;
+
         // ----------- Our reference solution uses 2 lines of code.
     }
 
