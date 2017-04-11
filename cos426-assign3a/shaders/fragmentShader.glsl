@@ -121,30 +121,46 @@ mat4 rotationMatrix(vec3 axis, float angle)
                 0.0,                                0.0,                                0.0,                                1.0);
 }
 
-float pointShadowRatio ( vec3 pos, vec3 lightVec ) {
-  // float count = 0.0;
-  // float k = 100.0;
-  // for ( int i = 1; i <= k; i += 1.0 ) {
-  //   for ( int j = 1; j <= k; j += 1.0) {
-  //     // Randomly sample a new light array around an original light
-  //     float x1 = rand( pos );
-  //     float x2 = rand( lightVec );
-  //     float sumOfSquares = x1 * x1 + x2 * x2;
-  //
-  //
-  //     if ( pointInShadow( pos, newLightVec ) { count += 0.0; }
-  //     else                                   { count += 1.0; }
-  //   }
-  // }
-  //
-  // return count / float( k * k );
-  return 1.0;
+// Code taken from http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl as was indicated to do so by Piazza
+// Produce pseudo-random float --> [-1, 1]
+float generate_random( vec3 a, float index ) {
+    return fract( sin( dot( a, vec3( 12.9898, 78.233, 12.24 ) * index) ) * 53896.29349 );
 }
 
-// Code taken from http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl as was indicated to do so by Piazza
-// Produce pseudo-random float --> [0, 1]
-float rand( vec3 co ){
-    return fract( sin( dot( co, vec3( 12.9898, 78.233, 100.0 ) ) ) * 43758.5453 );
+bool pointInShadow( vec3 pos, vec3 lightVec );
+
+float pointShadowRatio ( vec3 pos, vec3 lightVec ) {
+
+  float count = 0.0;
+  const int k = 8;
+
+  for ( int i = 1; i <= k; i += 1 ) {
+    for ( int j = 1; j <= k; j += 1 ) {
+      // Randomly sample a new light array around an original light
+
+      float x1 = generate_random ( pos, float (j) ) * 2.0 - 1.0;
+      float x2 = generate_random ( lightVec, float (i) ) * 2.0 - 1.0;
+      // float x1 = 0.25;
+      // float x2 = 0.25;
+      float sumOfSquares = x1 * x1 + x2 * x2;
+
+      float x = 2.0 * x1 * sqrt( 1.0 - sumOfSquares );
+      float y = 2.0 * x2 * sqrt( 1.0 - sumOfSquares );
+      float z = 1.0 - 2.0 * sumOfSquares;
+
+      vec3 newPos = vec3( x, y, z );
+      vec3 newLightVec = lightVec - newPos;
+
+      if ( pointInShadow( pos, newLightVec ) ) { count += 0.0; }
+      else                                     { count += 1.0; }
+
+    }
+  }
+
+  return count / ( float(k) * float(k) );
+
+
+  //return 1.0;
 }
 
 // Code copied from https://github.com/ashima/webgl-noise/blob/master/src/noise3D.glsl as approved by assignment specs for special material implementation
@@ -322,7 +338,6 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
 
 bool isIntersectionInBox(vec3 intersectPosition, float x0, float x1, float y0 , float y1, float z0, float z1) {
 
-
     if (x0 - EPS <= intersectPosition.x  && intersectPosition.x <= x1 + EPS) {
         if (y0 - EPS <= intersectPosition.y  && intersectPosition.y <= y1 + EPS) {
             if (z0 - EPS <= intersectPosition.z  && intersectPosition.z <= z1 + EPS) {
@@ -331,9 +346,7 @@ bool isIntersectionInBox(vec3 intersectPosition, float x0, float x1, float y0 , 
         }
     }
 
- 
     return false;
-
 }
 
 // Box
@@ -379,12 +392,10 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
     boxNormals[1] = yNorm;
     boxNormals[2] = zNorm;
 
-    // initialzing best distance 
+    // initialzing best distance
     float bestDist = dot(boxNormals[0], pmin);
 
-
     float bestIntersectionLength = findIntersectionWithPlane(ray, boxNormals[0], bestDist, bestIntersect);
-    
 
     if (isIntersectionInBox(bestIntersect.position, pmin.x, pmax.x, pmin.y, pmax.y, pmin.z, pmax.z)) {
         // do nothing
@@ -437,67 +448,47 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
 float getIntersectOpenCylinder( Ray ray, vec3 center, vec3 axis, float len, float rad, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
     vec3 normalized_axis = normalize(axis);
-
-    
     ray.direction = normalize(ray.direction);
     vec3 relativePosition = ray.origin - center;     // delta P  = (p - pa)
     float relative_p_dot_va = dot( relativePosition, normalized_axis );
     float v_dot_va = dot( ray.direction, normalized_axis );
-    
+
     vec3 vec_a = ray.direction - v_dot_va * normalized_axis;
     vec3 vec_c = relativePosition - relative_p_dot_va * normalized_axis;
-    
+
     float a = dot( vec_a, vec_a );
     float b = 2.0 * dot( vec_a, vec_c );
     float c = dot( vec_c, vec_c ) - ( rad * rad );
-
-
-    // if (true) {
-    //     return INFINITY;
-    // }
 
     float discriminant = (b*b) - (4.0 * a * c);
 
     if ( discriminant < EPS) {
         return INFINITY;
     }
-    
+
     // a(t^2) + b(t) + c = 0 <-- Use quadratic equation
     float t;
     float t1 = ( -b + sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
     float t2 = ( -b - sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
-    
-    if      ( t1 < EPS && t2 < EPS ) { 
-        return INFINITY; 
-    }
-    else if ( t2 >= EPS) { 
-        t = t2; 
-    }
-    else {
-     t = t1;
-    }
-    
+
+    if ( t1 < EPS && t2 < EPS ) { return INFINITY; }
+    else if ( t2 >= EPS)        { t = t2; }
+    else                        { t = t1; }
+
     intersect.position = ray.origin + ray.direction * t;
-    
+
     Ray normalRay;
     normalRay.origin = center;
     normalRay.direction = normalized_axis;
     float projectionLength = dot(intersect.position - center, normalized_axis );
-    
+
     intersect.normal = normalize( intersect.position -rayGetOffset( normalRay, projectionLength ));
-    
+
     vec3 dist = intersect.position - ray.origin;
     float relativeDistance = length(dist);
-    //return relativeDistance;
-    
-    
+
     vec3 cylinderBottomCenter = center;
     vec3 cylinderTopCenter = center + normalized_axis*len;
-
-    // if (true) {
-
-    //     return findIntersectionWithSphere(ray,  cylinderTopCenter, 5.0,intersect );
-    // }
 
     float bottomLimit = dot( normalized_axis, intersect.position - cylinderBottomCenter);
     float topLimit = dot(normalized_axis, intersect.position - cylinderTopCenter);
@@ -510,10 +501,6 @@ float getIntersectOpenCylinder( Ray ray, vec3 center, vec3 axis, float len, floa
 
     return relativeDistance;
 
-    // vec3 roundLimit = intersectPosition - center - capLimit * normalized_axis;
-    // if ( dot(roundLimit, roundLi;mit) - (rad * rad) == EPS && capLimit < EPS ) { 
-    //  return relativeDistance; 
-    //}
     // ----------- Our reference solution uses 31 lines of code.
     //return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
@@ -525,18 +512,14 @@ float getIntersectDisc( Ray ray, vec3 center, vec3 norm, float rad, out Intersec
     // Find P - intersection of ray with point on triangle's plane
     // Find normal of given triangle face
 
-    // if (true) {
-    //     return INFINITY;
-    // }
     vec3 normalized_norm = normalize(norm);
 
     float dist = dot(normalized_norm, center);
     float distToPlane = findIntersectionWithPlane(ray, normalized_norm, dist, intersect);
     float relativeDistance = distance(intersect.position, center);
 
-
-    if (relativeDistance < rad) { 
-        return distToPlane; 
+    if (relativeDistance < rad) {
+        return distToPlane;
     }
     // ----------- Our reference solution uses 15 lines of code.
     return INFINITY; // currently reports no intersection
@@ -576,15 +559,15 @@ float getIntersectOpenCone( Ray ray, vec3 apex, vec3 axis, float len, float radi
     float angleAlpha = atan(radius/len);
 
     vec3 normalized_axis = normalize(axis);
-    
+
     ray.direction = normalize(ray.direction);
     vec3 relativePosition = ray.origin - apex;     // delta P  = (p - pa)
     float relative_p_dot_va = dot( relativePosition, normalized_axis );
     float v_dot_va = dot( ray.direction, normalized_axis );
-    
+
     vec3 vec_a = ray.direction - v_dot_va * normalized_axis;
     vec3 vec_c = relativePosition - relative_p_dot_va * normalized_axis;
-    
+
     float cylinderA = dot( vec_a, vec_a );
     float cylinderB = 2.0 * dot( vec_a, vec_c );
     float cylinderc = dot( vec_c, vec_c ) - ( radius * radius );
@@ -601,62 +584,41 @@ float getIntersectOpenCone( Ray ray, vec3 apex, vec3 axis, float len, float radi
     if ( discriminant < EPS) {
         return INFINITY;
     }
-    
+
     // a(t^2) + b(t) + c = 0 <-- Use quadratic equation
     float t;
     float t1 = ( -b + sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
     float t2 = ( -b - sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
-    
-    if ( t1 < EPS && t2 < EPS ) { 
-        return INFINITY; 
+
+    if ( t1 < EPS && t2 < EPS ) {
+        return INFINITY;
     }
-    else if ( t2 >= EPS) { 
-        t = t2; 
+    else if ( t2 >= EPS) {
+        t = t2;
     }
     else {
      t = t1;
     }
-    
+
     intersect.position = ray.origin + ray.direction * t;
-    
+
     vec3 pointE = intersect.position - apex;
     intersect.normal = normalize(pointE - length(pointE) / cos(angleAlpha) * axis);
 
-    // Ray normalRay;
-    // normalRay.origin = center;
-    // normalRay.direction = normalized_axis;
-    // float projectionLength = dot(intersect.position - center, normalized_axis );
-    
-    // intersect.normal = normalize( intersect.position -rayGetOffset( normalRay, projectionLength ));
-    
     vec3 dist = intersect.position - ray.origin;
     float relativeDistance = length(dist);
-    //return relativeDistance;
-    
-    
+
     vec3 cylinderBottomCenter = center;
     vec3 cylinderTopCenter = center - normalized_axis*len;
 
-    // if (true) {
-
-    //     return findIntersectionWithSphere(ray,  apex, 5.0,intersect );
-    // }
-
-
-
     float coneLimit = dot(intersect.position - apex, axis);
 
-    if (coneLimit < EPS) {
-        return INFINITY;
-    }
+    if (coneLimit < EPS) { return INFINITY; }
 
-    if (coneLimit > len) {
-        return INFINITY;
-    }
+    if (coneLimit > len) { return INFINITY; }
     return relativeDistance;
 
-
-    return INFINITY; // currently reports no intersection
+    //return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
 }
 
@@ -740,9 +702,8 @@ bool pointInShadow( vec3 pos, vec3 lightVec ) {
     float hitLength = rayIntersectScene( ray, out_mat, out_intersect );
 
     float distanceToIntersection = length(out_intersect.position - pos);
-    // length > 0
 
-    if (hitLength > -EPS && hitLength < length(lightVec) - EPS) { return true; }
+    if ( hitLength > -EPS && hitLength < length(lightVec) - EPS ) { return true; }
 
     // ----------- Our reference solution uses 10 lines of code.
     return false;
@@ -754,7 +715,7 @@ vec3 getLightContribution( Light light, Material mat, vec3 posIntersection, vec3
     vec3 lightVector = light.position - posIntersection;
 
     // For calculation of soft shadows
-    float pointShadowRatio = pointShadowRatio( posIntersection, normalVector ) ;
+    float pointShadowRatio = pointShadowRatio( posIntersection, lightVector ) ;
 
     // For hard shadows
     // if ( pointInShadow( posIntersection, lightVector ) ) { return vec3( 0.0, 0.0, 0.0 ); }
