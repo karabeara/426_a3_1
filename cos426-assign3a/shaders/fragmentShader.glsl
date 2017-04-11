@@ -214,9 +214,9 @@ bool isIntersectionInBox(vec3 intersectPosition, float x0, float x1, float y0 , 
             }
         }
     }
-    else {
-        return false;
-    }
+ 
+    return false;
+
     
 
 }
@@ -233,7 +233,7 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
     vec3 yNorm;
     vec3 zNorm;
 
-    Intersection bestIntersect; 
+    Intersection bestIntersect;
     Intersection challengeIntersect;
 
     vec3 boxCorners[2];
@@ -268,10 +268,10 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
     boxNormals[2] = zNorm; 
 
     // initialzing best distance 
-    float bestDist = dot(boxNormals[1], pmin);
+    float bestDist = dot(boxNormals[0], pmin);
 
 
-    float bestIntersectionLength = findIntersectionWithPlane(ray, boxNormals[1], bestDist, bestIntersect);
+    float bestIntersectionLength = findIntersectionWithPlane(ray, boxNormals[0], bestDist, bestIntersect);
     
     if (isIntersectionInBox(bestIntersect.position, pmin.x, pmax.x, pmin.y, pmax.y, pmin.z, pmax.z)) {
         // do nothing
@@ -326,45 +326,84 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
 // Cylinder
 float getIntersectOpenCylinder( Ray ray, vec3 center, vec3 axis, float len, float rad, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
-    // vec3 normalized_axis = normalize(axis);
-    //
-    // vec3 relativePosition = ray.origin - center;     // delta P  = (p - pa)
-    // float p_dot_va = dot( relativePosition, normalized_axis );
-    // float v_dot_va = dot( ray.direction, normalized_axis );
-    //
-    // vec3 vec_a = ray.direction - v_dot_va * normalized_axis;
-    // vec3 vec_c = relativePosition - p_dot_va * normalized_axis;
-    //
-    // float a = dot( vec_a, vec_a );
-    // float b = 2.0 * dot( vec_a, vec_c );
-    // float c = dot( vec_c, vec_c ) - ( rad * rad );
-    //
-    // // a(t^2) + b(t) + c = 0 <-- Use quadratic equation
-    // float t;
-    // float t1 = ( -b + sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
-    // float t2 = ( -b - sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
-    //
-    // if      ( t1 < 0.0 && t2 < 0.0 ) { return INFINITY; }
-    // else if ( t1 >= 0.0 && t1 < t2 ) { t = t1; }
-    // else                             { t = t2; }
-    //
-    // intersect.position = ray.origin + ray.direction * t;
-    //
-    // Ray normalRay;
-    // normalRay.origin = center;
-    // normalRay.direction = normalized_axis;
-    // float projectionLength = dot( center - intersect.position, normalized_axis );
-    //
-    // intersect.normal = normalize( rayGetOffset( normalRay, projectionLength ) - intersect.position );
-    //
-    // vec3 dist = intersect.position - ray.origin;
-    // float relativeDistance = length(dist);
-    //
-    // float capLimit = dot( normalized_axis, (ray.origin + ray.direction * t) - center );
-    // vec3 roundLimit = (ray.origin + ray.direction * t) - center - capLimit * normalized_axis;
-    // if ( dot(roundLimit, roundLimit) - (rad * rad) == 0.0 && capLimit < 0.0 ) {  return relativeDistance; }
+    vec3 normalized_axis = normalize(axis);
+    
+    ray.direction = normalize(ray.direction);
+    vec3 relativePosition = ray.origin - center;     // delta P  = (p - pa)
+    float relative_p_dot_va = dot( relativePosition, normalized_axis );
+    float v_dot_va = dot( ray.direction, normalized_axis );
+    
+    vec3 vec_a = ray.direction - v_dot_va * normalized_axis;
+    vec3 vec_c = relativePosition - relative_p_dot_va * normalized_axis;
+    
+    float a = dot( vec_a, vec_a );
+    float b = 2.0 * dot( vec_a, vec_c );
+    float c = dot( vec_c, vec_c ) - ( rad * rad );
+
+    // if (true) {
+    //     return INFINITY;
+    // }
+
+    float discriminant = (b*b) - (4.0 * a * c);
+
+    if ( discriminant < EPS) {
+        return INFINITY;
+    }
+    
+    // a(t^2) + b(t) + c = 0 <-- Use quadratic equation
+    float t;
+    float t1 = ( -b + sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
+    float t2 = ( -b - sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
+    
+    if      ( t1 < EPS && t2 < EPS ) { 
+        return INFINITY; 
+    }
+    else if ( t2 >= EPS) { 
+        t = t2; 
+    }
+    else {
+     t = t1;
+    }
+    
+    intersect.position = ray.origin + ray.direction * t;
+    
+    Ray normalRay;
+    normalRay.origin = center;
+    normalRay.direction = normalized_axis;
+    float projectionLength = dot(intersect.position - center, normalized_axis );
+    
+    intersect.normal = normalize( intersect.position -rayGetOffset( normalRay, projectionLength ));
+    
+    vec3 dist = intersect.position - ray.origin;
+    float relativeDistance = length(dist);
+    //return relativeDistance;
+    
+    
+    vec3 cylinderBottomCenter = center;
+    vec3 cylinderTopCenter = center + normalized_axis*len;
+
+    // if (true) {
+
+    //     return findIntersectionWithSphere(ray,  cylinderTopCenter, 5.0,intersect );
+    // }
+
+    float bottomLimit = dot( normalized_axis, intersect.position - cylinderBottomCenter);
+    float topLimit = dot(normalized_axis, intersect.position - cylinderTopCenter);
+    if (bottomLimit < EPS) {
+        return INFINITY;
+    }
+    if (topLimit > -EPS) {
+        return INFINITY;
+    }
+
+    return relativeDistance;
+
+    // vec3 roundLimit = intersectPosition - center - capLimit * normalized_axis;
+    // if ( dot(roundLimit, roundLi;mit) - (rad * rad) == EPS && capLimit < EPS ) { 
+    //  return relativeDistance; 
+    //}
     // ----------- Our reference solution uses 31 lines of code.
-    return INFINITY; // currently reports no intersection
+    //return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
 }
 
@@ -373,13 +412,20 @@ float getIntersectDisc( Ray ray, vec3 center, vec3 norm, float rad, out Intersec
 
     // Find P - intersection of ray with point on triangle's plane
     // Find normal of given triangle face
+
+    // if (true) {
+    //     return INFINITY;
+    // }
     vec3 normalized_norm = normalize(norm);
 
     float dist = dot(normalized_norm, center);
     float distToPlane = findIntersectionWithPlane(ray, normalized_norm, dist, intersect);
     float relativeDistance = distance(intersect.position, center);
 
-    if (relativeDistance < rad) { return distToPlane; }
+
+    if (relativeDistance < rad) { 
+        return distToPlane; 
+    }
     // ----------- Our reference solution uses 15 lines of code.
     return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
@@ -412,6 +458,93 @@ float findIntersectionWithCylinder( Ray ray, vec3 center, vec3 apex, float radiu
 float getIntersectOpenCone( Ray ray, vec3 apex, vec3 axis, float len, float radius, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
     // ----------- Our reference solution uses 31 lines of code.
+    axis = normalize(axis);
+    ray.direction = normalize(ray.direction);
+
+    vec3 center = apex + (len * axis);
+    float angleAlpha = atan(radius/len);
+
+    vec3 normalized_axis = normalize(axis);
+    
+    ray.direction = normalize(ray.direction);
+    vec3 relativePosition = ray.origin - apex;     // delta P  = (p - pa)
+    float relative_p_dot_va = dot( relativePosition, normalized_axis );
+    float v_dot_va = dot( ray.direction, normalized_axis );
+    
+    vec3 vec_a = ray.direction - v_dot_va * normalized_axis;
+    vec3 vec_c = relativePosition - relative_p_dot_va * normalized_axis;
+    
+    float cylinderA = dot( vec_a, vec_a );
+    float cylinderB = 2.0 * dot( vec_a, vec_c );
+    float cylinderc = dot( vec_c, vec_c ) - ( radius * radius );
+
+    float cosSquaredAlpha = cos(angleAlpha) * cos(angleAlpha);
+    float sinSquaredAlpha = sin(angleAlpha) * sin(angleAlpha);
+
+    float a = (cosSquaredAlpha * cylinderA) - (sinSquaredAlpha * v_dot_va * v_dot_va);
+    float b = (cosSquaredAlpha * cylinderB) - (2.0 * sinSquaredAlpha * v_dot_va * relative_p_dot_va);
+    float c = cosSquaredAlpha * dot(vec_c, vec_c) - sinSquaredAlpha * relative_p_dot_va * relative_p_dot_va;
+
+    float discriminant = (b*b) - (4.0 * a * c);
+
+    if ( discriminant < EPS) {
+        return INFINITY;
+    }
+    
+    // a(t^2) + b(t) + c = 0 <-- Use quadratic equation
+    float t;
+    float t1 = ( -b + sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
+    float t2 = ( -b - sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
+    
+    if ( t1 < EPS && t2 < EPS ) { 
+        return INFINITY; 
+    }
+    else if ( t2 >= EPS) { 
+        t = t2; 
+    }
+    else {
+     t = t1;
+    }
+    
+    intersect.position = ray.origin + ray.direction * t;
+    
+    vec3 pointE = intersect.position - apex;
+    intersect.normal = normalize(pointE - length(pointE) / cos(angleAlpha) * axis);
+
+    // Ray normalRay;
+    // normalRay.origin = center;
+    // normalRay.direction = normalized_axis;
+    // float projectionLength = dot(intersect.position - center, normalized_axis );
+    
+    // intersect.normal = normalize( intersect.position -rayGetOffset( normalRay, projectionLength ));
+    
+    vec3 dist = intersect.position - ray.origin;
+    float relativeDistance = length(dist);
+    //return relativeDistance;
+    
+    
+    vec3 cylinderBottomCenter = center;
+    vec3 cylinderTopCenter = center - normalized_axis*len;
+
+    // if (true) {
+
+    //     return findIntersectionWithSphere(ray,  apex, 5.0,intersect );
+    // }
+
+
+
+    float coneLimit = dot(intersect.position - apex, axis);
+
+    if (coneLimit < EPS) {
+        return INFINITY;
+    }
+
+    if (coneLimit > len) {
+        return INFINITY;
+    }
+    return relativeDistance;
+
+
     return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
 }
