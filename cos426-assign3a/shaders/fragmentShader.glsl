@@ -121,6 +121,115 @@ mat4 rotationMatrix(vec3 axis, float angle)
                 0.0,                                0.0,                                0.0,                                1.0);
 }
 
+float pointShadowRatio ( vec3 pos, vec3 lightVec ) {
+  // float count = 0.0;
+  // float k = 100.0;
+  // for ( int i = 1; i <= k; i += 1.0 ) {
+  //   for ( int j = 1; j <= k; j += 1.0) {
+  //     // Randomly sample a new light array around an original light
+  //     float x1 = rand( pos );
+  //     float x2 = rand( lightVec );
+  //     float sumOfSquares = x1 * x1 + x2 * x2;
+  //
+  //
+  //     if ( pointInShadow( pos, newLightVec ) { count += 0.0; }
+  //     else                                   { count += 1.0; }
+  //   }
+  // }
+  //
+  // return count / float( k * k );
+  return 1.0;
+}
+
+// Code taken from http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl as was indicated to do so by Piazza
+// Produce pseudo-random float --> [0, 1]
+float rand( vec3 co ){
+    return fract( sin( dot( co, vec2( 12.9898, 78.233, 100.0 ) ) ) * 43758.5453 );
+}
+
+// Code copied from https://github.com/ashima/webgl-noise/blob/master/src/noise3D.glsl as approved by assignment specs for special material implementation
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+
+vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+
+vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+
+vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+float snoise(vec3 v) {
+  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+
+  // First corner
+  vec3 i  = floor(v + dot(v, C.yyy) );
+  vec3 x0 =   v - i + dot(i, C.xxx) ;
+
+  // Other corners
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min( g.xyz, l.zxy );
+  vec3 i2 = max( g.xyz, l.zxy );
+
+  //   x0 = x0 - 0.0 + 0.0 * C.xxx;
+  //   x1 = x0 - i1  + 1.0 * C.xxx;
+  //   x2 = x0 - i2  + 2.0 * C.xxx;
+  //   x3 = x0 - 1.0 + 3.0 * C.xxx;
+  vec3 x1 = x0 - i1 + C.xxx;
+  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
+  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
+
+  // Permutations
+  i = mod289(i);
+  vec4 p = permute( permute( permute(
+             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+
+  // Gradients: 7x7 points over a square, mapped onto an octahedron.
+  // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
+  float n_ = 0.142857142857; // 1.0/7.0
+  vec3  ns = n_ * D.wyz - D.xzx;
+
+  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
+
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)
+
+  vec4 x = x_ *ns.x + ns.yyyy;
+  vec4 y = y_ *ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+
+  vec4 b0 = vec4( x.xy, y.xy );
+  vec4 b1 = vec4( x.zw, y.zw );
+
+  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;
+  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;
+  vec4 s0 = floor(b0)*2.0 + 1.0;
+  vec4 s1 = floor(b1)*2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+
+  vec3 p0 = vec3(a0.xy,h.x);
+  vec3 p1 = vec3(a0.zw,h.y);
+  vec3 p2 = vec3(a1.xy,h.z);
+  vec3 p3 = vec3(a1.zw,h.w);
+
+  //Normalise gradients
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+  p0 *= norm.x;
+  p1 *= norm.y;
+  p2 *= norm.z;
+  p3 *= norm.w;
+
+  // Mix final noise value
+  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+  m = m * m;
+  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
+                                dot(p2,x2), dot(p3,x3) ) );
+}
+
 // ----------- Our reference solution uses 135 lines of code.
 // ----------- STUDENT CODE END ------------
 
@@ -225,8 +334,7 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
     // pmin and pmax represent two bounding points of the box
     // pmin stores [xmin, ymin, zmin] and pmax stores [xmax, ymax, zmax]
 
-
-    //normls of box
+    //normals of box
     vec3 xNorm;
     vec3 yNorm;
     vec3 zNorm;
@@ -258,8 +366,6 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
     zNorm = normalize(zNorm);
 
     //normalize normals
-
-
     vec3 boxNormals[3];
     boxNormals[0] = xNorm;
     boxNormals[1] = yNorm;
@@ -267,8 +373,6 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
 
     // initialzing best distance
     float bestDist = dot(boxNormals[1], pmin);
-
-
     float bestIntersectionLength = findIntersectionWithPlane(ray, boxNormals[1], bestDist, bestIntersect);
 
     if (isIntersectionInBox(bestIntersect.position, pmin.x, pmax.x, pmin.y, pmax.y, pmin.z, pmax.z)) {
@@ -277,8 +381,6 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
     else {
         bestIntersectionLength = INFINITY;
     }
-
-
 
     // interates through the planes and chooses the plane with the closest intersection
     for (int i = 0; i < 3; i++) {
@@ -310,7 +412,6 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
         }
     }
 
-
     out_intersect = bestIntersect;
 
     /* function that takes 3 points and then computes normal and then checks
@@ -324,44 +425,45 @@ float findIntersectionWithBox( Ray ray, vec3 pmin, vec3 pmax, out Intersection o
 // Cylinder
 float getIntersectOpenCylinder( Ray ray, vec3 center, vec3 axis, float len, float rad, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
-    // vec3 normalized_axis = normalize(axis);
-    //
-    // vec3 relativePosition = ray.origin - center;     // delta P  = (p - pa)
-    // float p_dot_va = dot( relativePosition, normalized_axis );
-    // float v_dot_va = dot( ray.direction, normalized_axis );
-    //
-    // vec3 vec_a = ray.direction - v_dot_va * normalized_axis;
-    // vec3 vec_c = relativePosition - p_dot_va * normalized_axis;
-    //
-    // float a = dot( vec_a, vec_a );
-    // float b = 2.0 * dot( vec_a, vec_c );
-    // float c = dot( vec_c, vec_c ) - ( rad * rad );
-    //
-    // // a(t^2) + b(t) + c = 0 <-- Use quadratic equation
-    // float t;
-    // float t1 = ( -b + sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
-    // float t2 = ( -b - sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
-    //
-    // if      ( t1 < 0.0 && t2 < 0.0 ) { return INFINITY; }
-    // else if ( t1 >= 0.0 && t1 < t2 ) { t = t1; }
-    // else                             { t = t2; }
-    //
-    // intersect.position = ray.origin + ray.direction * t;
-    //
-    // Ray normalRay;
-    // normalRay.origin = center;
-    // normalRay.direction = normalized_axis;
-    // float projectionLength = dot( center - intersect.position, normalized_axis );
-    //
-    // intersect.normal = normalize( rayGetOffset( normalRay, projectionLength ) - intersect.position );
-    //
-    // vec3 dist = intersect.position - ray.origin;
-    // float relativeDistance = length(dist);
-    //
-    // float capLimit = dot( normalized_axis, (ray.origin + ray.direction * t) - center );
-    // vec3 roundLimit = (ray.origin + ray.direction * t) - center - capLimit * normalized_axis;
-    // if ( dot(roundLimit, roundLimit) - (rad * rad) == 0.0 && capLimit < 0.0 ) {  return relativeDistance; }
-    // ----------- Our reference solution uses 31 lines of code.
+    vec3 normalized_axis = normalize(axis);
+
+    vec3 relativePosition = ray.origin - center;     // delta P  = (p - pa)
+    float p_dot_va = dot( relativePosition, normalized_axis );
+    float v_dot_va = dot( ray.direction, normalized_axis );
+
+    vec3 vec_a = ray.direction - v_dot_va * normalized_axis;
+    vec3 vec_c = relativePosition - p_dot_va * normalized_axis;
+
+    float a = dot( vec_a, vec_a );
+    float b = 2.0 * dot( vec_a, vec_c );
+    float c = dot( vec_c, vec_c ) - ( rad * rad );
+
+    // a(t^2) + b(t) + c = 0 <-- Use quadratic equation
+    float t;
+    if (b * b - 4.0 * a * c < EPS) { return INFINITY; }
+    float t1 = ( -b + sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
+    float t2 = ( -b - sqrt( b * b - 4.0 * a * c) ) / ( 2.0 * a );
+
+    if      ( t1 < 0.0 && t2 < 0.0 ) { return INFINITY; }
+    else if ( t1 >= 0.0 && t1 < t2 ) { t = t1; }
+    else                             { t = t2; }
+
+    intersect.position = ray.origin + ray.direction * t;
+
+    Ray normalRay;
+    normalRay.origin = center;
+    normalRay.direction = normalized_axis;
+    float projectionLength = dot( center - intersect.position, normalized_axis );
+
+    intersect.normal = normalize( rayGetOffset( normalRay, projectionLength ) - intersect.position );
+
+    vec3 dist = intersect.position - ray.origin;
+    float relativeDistance = length(dist);
+
+    float capLimit = dot( normalized_axis, (ray.origin + ray.direction * t) - center );
+    vec3 roundLimit = (ray.origin + ray.direction * t) - center - capLimit * normalized_axis;
+    if ( dot(roundLimit, roundLimit) - (rad * rad) == 0.0 && capLimit < 0.0 ) {  return relativeDistance; }
+    //----------- Our reference solution uses 31 lines of code.
     return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
 }
@@ -382,7 +484,6 @@ float getIntersectDisc( Ray ray, vec3 center, vec3 norm, float rad, out Intersec
     return INFINITY; // currently reports no intersection
     // ----------- STUDENT CODE END ------------
 }
-
 
 float findIntersectionWithCylinder( Ray ray, vec3 center, vec3 apex, float radius, out Intersection out_intersect ) {
     vec3 axis = apex - center;
@@ -462,8 +563,7 @@ vec3 calculateSpecialDiffuseColor( Material mat, vec3 posIntersection, vec3 norm
     }
     else if ( mat.special == MYSPECIAL ) {
         // do something here for myspecial
-        // Line taken from http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl as wass approced by the specs
-        return fract(sin(dot(posIntersection, vec3(12.9898,78.233, 100.0))) * 43758.5453) * mat.color;
+        return snoise( posIntersection ) * mat.color;
 
         // ----------- Our reference solution uses 2 lines of code.
     }
@@ -484,6 +584,8 @@ vec3 calculateDiffuseColor( Material mat, vec3 posIntersection, vec3 normalVecto
 // lightVec is the vector from that position to that light
 bool pointInShadow( vec3 pos, vec3 lightVec ) {
     // ----------- STUDENT CODE BEGIN ------------
+
+    // FOR HARD SHADOWS
     Ray ray;
     ray.origin    = pos;
     ray.direction = normalize( lightVec );
@@ -496,6 +598,7 @@ bool pointInShadow( vec3 pos, vec3 lightVec ) {
     // length > 0
 
     if (hitLength > -EPS && hitLength < length(lightVec) - EPS) { return true; }
+
     // ----------- Our reference solution uses 10 lines of code.
     return false;
     // ----------- STUDENT CODE END ------------
@@ -505,9 +608,11 @@ vec3 getLightContribution( Light light, Material mat, vec3 posIntersection, vec3
 
     vec3 lightVector = light.position - posIntersection;
 
-    if ( pointInShadow( posIntersection, lightVector ) ) {
-        return vec3( 0.0, 0.0, 0.0 );
-    }
+    // For calculation of soft shadows
+    float pointShadowRatio = pointShadowRatio( posIntersection, normalVector ) ;
+
+    // For hard shadows
+    // if ( pointInShadow( posIntersection, lightVector ) ) { return vec3( 0.0, 0.0, 0.0 ); }
 
     if ( mat.materialType == PHONGMATERIAL || mat.materialType == LAMBERTMATERIAL ) {
         vec3 contribution = vec3( 0.0, 0.0, 0.0 );
@@ -541,10 +646,10 @@ vec3 getLightContribution( Light light, Material mat, vec3 posIntersection, vec3
             contribution += phongTerm;
         }
 
-        return contribution;
+        return contribution * pointShadowRatio;
     }
     else {
-        return diffuseColor;
+        return diffuseColor * pointShadowRatio;
     }
 
 }
