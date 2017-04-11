@@ -132,16 +132,13 @@ bool pointInShadow( vec3 pos, vec3 lightVec );
 float pointShadowRatio ( vec3 pos, vec3 lightVec ) {
 
   float count = 0.0;
-  const int k = 8;
+  const int k = 4;
 
   for ( int i = 1; i <= k; i += 1 ) {
     for ( int j = 1; j <= k; j += 1 ) {
       // Randomly sample a new light array around an original light
-
       float x1 = generate_random ( pos, float (j) ) * 2.0 - 1.0;
       float x2 = generate_random ( lightVec, float (i) ) * 2.0 - 1.0;
-      // float x1 = 0.25;
-      // float x2 = 0.25;
       float sumOfSquares = x1 * x1 + x2 * x2;
 
       float x = 2.0 * x1 * sqrt( 1.0 - sumOfSquares );
@@ -711,7 +708,7 @@ vec3 getLightContribution( Light light, Material mat, vec3 posIntersection, vec3
     float pointShadowRatio = pointShadowRatio( posIntersection, lightVector ) ;
 
     // For hard shadows
-    // if ( pointInShadow( posIntersection, lightVector ) ) { return vec3( 0.0, 0.0, 0.0 ); }
+    //if ( pointInShadow( posIntersection, lightVector ) ) { return vec3( 0.0, 0.0, 0.0 ); }
 
     if ( mat.materialType == PHONGMATERIAL || mat.materialType == LAMBERTMATERIAL ) {
         vec3 contribution = vec3( 0.0, 0.0, 0.0 );
