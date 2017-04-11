@@ -141,10 +141,38 @@ float pointShadowRatio ( vec3 pos, vec3 lightVec ) {
   return 1.0;
 }
 
+
 // Code taken from http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl as was indicated to do so by Piazza
 // Produce pseudo-random float --> [0, 1]
 float rand( vec3 co ){
-    return fract( sin( dot( co, vec3( 12.9898, 78.233, 100.0 ) ) ) * 43758.5453 );
+
+  float count = 0.0;
+  const int k = 4;
+
+  for ( int i = 1; i <= k; i += 1 ) {
+    for ( int j = 1; j <= k; j += 1 ) {
+      // Randomly sample a new light array around an original light
+      float x1 = generate_random ( pos, float (j) ) * 2.0 - 1.0;
+      float x2 = generate_random ( lightVec, float (i) ) * 2.0 - 1.0;
+      float sumOfSquares = x1 * x1 + x2 * x2;
+
+      float x = 2.0 * x1 * sqrt( 1.0 - sumOfSquares );
+      float y = 2.0 * x2 * sqrt( 1.0 - sumOfSquares );
+      float z = 1.0 - 2.0 * sumOfSquares;
+
+      vec3 newPos = vec3( x, y, z );
+      vec3 newLightVec = lightVec - newPos;
+
+      if ( pointInShadow( pos, newLightVec ) ) { count += 0.0; }
+      else                                     { count += 1.0; }
+
+    }
+  }
+
+  return count / ( float(k) * float(k) );
+
+
+  //return 1.0;
 }
 
 // Code copied from https://github.com/ashima/webgl-noise/blob/master/src/noise3D.glsl as approved by assignment specs for special material implementation
@@ -752,7 +780,7 @@ vec3 getLightContribution( Light light, Material mat, vec3 posIntersection, vec3
     float pointShadowRatio = pointShadowRatio( posIntersection, normalVector ) ;
 
     // For hard shadows
-    // if ( pointInShadow( posIntersection, lightVector ) ) { return vec3( 0.0, 0.0, 0.0 ); }
+    //if ( pointInShadow( posIntersection, lightVector ) ) { return vec3( 0.0, 0.0, 0.0 ); }
 
     if ( mat.materialType == PHONGMATERIAL || mat.materialType == LAMBERTMATERIAL ) {
         vec3 contribution = vec3( 0.0, 0.0, 0.0 );
