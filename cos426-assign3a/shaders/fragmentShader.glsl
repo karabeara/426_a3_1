@@ -129,10 +129,10 @@ float generate_random( vec3 a, float index ) {
 
 bool pointInShadow( vec3 pos, vec3 lightVec );
 
-float pointShadowRatio ( vec3 pos, vec3 lightVec ) {
+float pointShadowRatio ( vec3 pos, vec3 lightVec, vec3 lightPosition ) {
 
   float count = 0.0;
-  const int k = 4;
+  const int k = 8;
 
   for ( int i = 1; i <= k; i += 1 ) {
     for ( int j = 1; j <= k; j += 1 ) {
@@ -145,8 +145,9 @@ float pointShadowRatio ( vec3 pos, vec3 lightVec ) {
       float y = 2.0 * x2 * sqrt( 1.0 - sumOfSquares );
       float z = 1.0 - 2.0 * sumOfSquares;
 
-      vec3 newPos = vec3( x, y, z );
-      vec3 newLightVec = lightVec - newPos;
+      vec3 pointNearIntersection = vec3( x, y, z ) + pos;
+      vec3 newLightVec = lightPosition - pointNearIntersection;
+      // vec3 newLightVec = lightPosition - pos;
 
       if ( pointInShadow( pos, newLightVec ) ) { count += 0.0; }
       else                                     { count += 1.0; }
@@ -705,10 +706,10 @@ vec3 getLightContribution( Light light, Material mat, vec3 posIntersection, vec3
     vec3 lightVector = light.position - posIntersection;
 
     // For calculation of soft shadows
-    float pointShadowRatio = pointShadowRatio( posIntersection, lightVector ) ;
+    float pointShadowRatio = pointShadowRatio( posIntersection, lightVector, light.position ) ;
 
     // For hard shadows
-    //if ( pointInShadow( posIntersection, lightVector ) ) { return vec3( 0.0, 0.0, 0.0 ); }
+    // if ( pointInShadow( posIntersection, lightVector ) ) { return vec3( 0.0, 0.0, 0.0 ); }
 
     if ( mat.materialType == PHONGMATERIAL || mat.materialType == LAMBERTMATERIAL ) {
         vec3 contribution = vec3( 0.0, 0.0, 0.0 );
