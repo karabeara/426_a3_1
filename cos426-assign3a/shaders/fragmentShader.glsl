@@ -123,17 +123,8 @@ mat4 rotationMatrix(vec3 axis, float angle)
 
 // Code taken from http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl as was indicated to do so by Piazza
 // Produce pseudo-random float --> [-1, 1]
-float generate_random( vec3 a, float num ) {
-    float mapNum;
-    if      ( num <= 1.0 + EPS) { mapNum = 53896.29349; }
-    else if ( num <= 2.0 + EPS) { mapNum = 3439483.2392; }
-    else if ( num <= 3.0 + EPS) { mapNum = 4920.6842; }
-    else if ( num <= 4.0 + EPS) { mapNum = 30294.2; }
-    else if ( num <= 5.0 + EPS) { mapNum = 39204.230; }
-    else if ( num <= 6.0 + EPS) { mapNum = 89482.2; }
-    else                        { mapNum = 93032.2; }
-
-    return fract( sin( dot( a, vec3( 12.9898, 78.233, 12.24 ) ) ) * mapNum );
+float generate_random( vec3 a, float index ) {
+    return fract( sin( dot( a, vec3( 12.9898, 78.233, 12.24 ) * index) ) * 53896.29349 );
 }
 
 bool pointInShadow( vec3 pos, vec3 lightVec );
@@ -147,8 +138,10 @@ float pointShadowRatio ( vec3 pos, vec3 lightVec ) {
     for ( int j = 1; j <= k; j += 1 ) {
       // Randomly sample a new light array around an original light
 
-      float x1 = generate_random ( pos, float (i) ) * 2.0 - 1.0;
-      float x2 = generate_random ( lightVec, float (j) ) * 2.0 - 1.0;
+      float x1 = generate_random ( pos, float (j) ) * 2.0 - 1.0;
+      float x2 = generate_random ( lightVec, float (i) ) * 2.0 - 1.0;
+      // float x1 = 0.25;
+      // float x2 = 0.25;
       float sumOfSquares = x1 * x1 + x2 * x2;
 
       float x = 2.0 * x1 * sqrt( 1.0 - sumOfSquares );
@@ -156,28 +149,16 @@ float pointShadowRatio ( vec3 pos, vec3 lightVec ) {
       float z = 1.0 - 2.0 * sumOfSquares;
 
       vec3 newPos = vec3( x, y, z );
-      vec3 newLightVec = ( lightVec ) - newPos;
+      vec3 newLightVec = lightVec - newPos;
 
       if ( pointInShadow( pos, newLightVec ) ) { count += 0.0; }
       else                                     { count += 1.0; }
+
     }
   }
 
   return count / ( float(k) * float(k) );
 
-  // Ray ray;
-  // ray.origin    = pos;
-  // ray.direction = normalize( lightVec );
-  //
-  // Material out_mat;
-  // Intersection out_intersect;
-  // float hitLength = rayIntersectScene( ray, out_mat, out_intersect );
-  //
-  // float distanceToIntersection = length(out_intersect.position - pos);
-  // // length > 0
-  //
-  // if (hitLength > -EPS && hitLength < length(lightVec) - EPS) { return true; }
-  //
 
   //return 1.0;
 }
