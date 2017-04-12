@@ -297,6 +297,8 @@ float findIntersectionWithTriangle( Ray ray, vec3 t1, vec3 t2, vec3 t3, out Inte
 float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Intersection intersect ) {
     // ----------- STUDENT CODE BEGIN ------------
     // ----------- Our reference solution uses 23 lines of code.
+
+    if (frame != 0) {
     float two_PI = 3.1415926 * 2.0;
     float frameFloat = float(frame);
     frameFloat = frameFloat/ 10.0;
@@ -308,9 +310,11 @@ float findIntersectionWithSphere( Ray ray, vec3 center, float radius, out Inters
     // if (frame == 0) {
     //     return INFINITY;
     // }
+
     center.z = center.z + zOffset;
     center.y = center.y + yOffset;
     center.x = center.x + xOffset;
+    }
 
     vec3 lengthToCenter = center - ray.origin;
     vec3 normalizedDirection = normalize(ray.direction);
