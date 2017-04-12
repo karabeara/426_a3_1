@@ -107,7 +107,7 @@ float areaOfTriangle(vec3 v1, vec3 v2, vec3 v3, vec3 norm) {
   return area1;
 }
 
-// Code copied directly from http://www.neilmendoza.com/glsl-rotation-about-an-arbitrary-axis/ as told to do so by Riley
+// Code adapted directly from http://www.neilmendoza.com/glsl-rotation-about-an-arbitrary-axis/ as told to do so by Riley
 mat4 rotationMatrix(vec3 axis, float angle)
 {
     axis = normalize(axis);
