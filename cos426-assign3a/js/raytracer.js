@@ -151,6 +151,8 @@ Raytracer.init = function (height, width, debug) {
 };
 
 Raytracer.setCamera = function(cameraAngle) {
+
+    console.log("DHFGS");
     //rotation matrix
 	var newRotationMatrix = mat4.create();
 	mat4.identity(newRotationMatrix);
@@ -183,6 +185,7 @@ Raytracer.render = function( animated ) {
     if ( animated ) {
         this.setUniform('1i', 'frame', this.frame);
     }
+    console.log("frmaeChange");
 	//rotation matrix
     
     this.setUniform('Matrix4fv', 'uMVMatrix', false, this.RotationMatrix );
